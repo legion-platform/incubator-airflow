@@ -664,9 +664,14 @@ class KubernetesExecutor(BaseExecutor, LoggingMixin):
             self.kube_scheduler.delete_pod(pod_id)
             try:
                 self.log.info('Deleted pod: %s', str(key))
-                self.running.pop(key)
+                running_key = (key[0], key[1], key[2].replace(tzinfo=next(iter(self.running))[-2].tzinfo), key[3])
+                self.log.info('Updated key to remove from running dict: %s', str(running_key))
+                self.running.pop(running_key)
             except KeyError:
                 self.log.debug('Could not find key: %s', str(key))
+                pass
+            except StopIteration:
+                self.log.info('Running dict is empty')
                 pass
         self.event_buffer[key] = state
         (dag_id, task_id, ex_time, try_number) = key
